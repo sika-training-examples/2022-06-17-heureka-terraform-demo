@@ -8,10 +8,16 @@ resource "digitalocean_ssh_key" "default-ed25519" {
   public_key = file("./ssh-keys/ondrejsika_ed25519.pub")
 }
 
+resource "digitalocean_ssh_key" "ipad" {
+  name       = "ipad"
+  public_key = file("./ssh-keys/ipad.pub")
+}
+
 locals {
   DEFAULT_SSH_KEYS = [
     digitalocean_ssh_key.default.id,
     digitalocean_ssh_key.default-ed25519.id,
+    digitalocean_ssh_key.ipad.id,
   ]
 }
 
@@ -27,6 +33,12 @@ resource "digitalocean_droplet" "example" {
   region   = "fra1"
   size     = "s-1vcpu-1gb"
   ssh_keys = local.DEFAULT_SSH_KEYS
+
+  lifecycle {
+    ignore_changes = [
+      ssh_keys,
+    ]
+  }
 }
 
 output "ip" {
