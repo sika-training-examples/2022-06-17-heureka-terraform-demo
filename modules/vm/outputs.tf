@@ -1,9 +1,5 @@
 output "ip" {
-  value = digitalocean_floating_ip.this.ip_address
-}
-
-output "digitalocean_floating_ip" {
-  value = digitalocean_floating_ip.this
+  value = digitalocean_droplet.this.ipv4_address
 }
 
 output "digitalocean_droplet" {

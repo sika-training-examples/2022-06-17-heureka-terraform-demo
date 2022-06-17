@@ -1,6 +1,6 @@
-resource "digitalocean_floating_ip" "this" {
-  region = var.region
-}
+# resource "digitalocean_floating_ip" "this" {
+#   region = var.region
+# }
 
 resource "digitalocean_droplet" "this" {
   image    = var.image
@@ -10,15 +10,15 @@ resource "digitalocean_droplet" "this" {
   ssh_keys = var.ssh_keys
 }
 
-resource "digitalocean_floating_ip_assignment" "this" {
-  ip_address = digitalocean_floating_ip.this.ip_address
-  droplet_id = digitalocean_droplet.this.id
-}
+# resource "digitalocean_floating_ip_assignment" "this" {
+#   ip_address = digitalocean_floating_ip.this.ip_address
+#   droplet_id = digitalocean_droplet.this.id
+# }
 
 resource "cloudflare_record" "A" {
   zone_id = var.cloudflare_zone_id
   name    = var.name
-  value   = digitalocean_floating_ip.this.ip_address
+  value   = digitalocean_droplet.this.ipv4_address
   type    = "A"
 }
 
