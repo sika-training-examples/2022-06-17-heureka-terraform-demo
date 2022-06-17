@@ -19,6 +19,7 @@ locals {
     digitalocean_ssh_key.default-ed25519.id,
     digitalocean_ssh_key.ipad.id,
   ]
+  DEBIAN = "debian-11-x64"
 }
 
 data "digitalocean_droplet_snapshot" "heureka" {
@@ -27,14 +28,17 @@ data "digitalocean_droplet_snapshot" "heureka" {
   most_recent = true
 }
 
-resource "digitalocean_droplet" "example" {
-  for_each = {
-    "0" = null
-    "1" = null
+locals {
+  droplets = {
+    foo = data.digitalocean_droplet_snapshot.heureka.id
   }
+}
 
-  image    = data.digitalocean_droplet_snapshot.heureka.id
-  name     = "example${each.key}"
+resource "digitalocean_droplet" "example" {
+  for_each = local.droplets
+
+  image    = each.value
+  name     = each.key
   region   = "fra1"
   size     = "s-1vcpu-1gb"
   ssh_keys = local.DEFAULT_SSH_KEYS
@@ -43,6 +47,14 @@ resource "digitalocean_droplet" "example" {
     ignore_changes = [
       ssh_keys,
     ]
+    prevent_destroy = true
+  }
+  provisioner "local-exec" {
+    command = "slu wf tcp -a ${self.ipv4_address}:80 -t 15"
+  }
+  provisioner "local-exec" {
+    when    = destroy
+    command = "echo backup droplet ${self.id}"
   }
 }
 
