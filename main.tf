@@ -28,10 +28,13 @@ data "digitalocean_droplet_snapshot" "heureka" {
 }
 
 resource "digitalocean_droplet" "example" {
-  count = 2
+  for_each = {
+    "0" = null
+    "1" = null
+  }
 
   image    = data.digitalocean_droplet_snapshot.heureka.id
-  name     = "example${count.index}"
+  name     = "example${each.key}"
   region   = "fra1"
   size     = "s-1vcpu-1gb"
   ssh_keys = local.DEFAULT_SSH_KEYS
@@ -43,8 +46,18 @@ resource "digitalocean_droplet" "example" {
   }
 }
 
+output "ip-list" {
+  value = [
+    for key, vm in digitalocean_droplet.example :
+    vm.ipv4_address
+  ]
+}
+
 output "ip" {
-  value = digitalocean_droplet.example[*].ipv4_address
+  value = {
+    for key, vm in digitalocean_droplet.example :
+    key => vm.ipv4_address
+  }
 }
 
 resource "random_password" "password" {
