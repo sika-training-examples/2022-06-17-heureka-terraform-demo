@@ -3,32 +3,36 @@ locals {
   DEBIAN               = "debian-11-x64"
 }
 
-module "vm--foo" {
+module "vm--dev-db" {
   source             = "./modules/vm"
-  name               = "foo"
+  name               = "dev-db"
   image              = local.DEBIAN
   cloudflare_zone_id = local.ZONE_ID_SIKADEMO_COM
 }
 
-module "vm--bar" {
+module "vm--dev-web" {
   source             = "./modules/vm"
-  name               = "bar"
+  name               = "dev-web"
   image              = local.DEBIAN
   cloudflare_zone_id = local.ZONE_ID_SIKADEMO_COM
-
+  depends_on = [
+    module.vm--dev-db,
+  ]
 }
 
-output "ip-foo" {
-  value = module.vm--foo.ip
-}
-
-output "ip-bar" {
-  value = module.vm--bar.ip
-}
-
-module "k8s--dev" {
-  source             = "./modules/k8s"
-  name               = "dev"
-  node_count         = 2
+module "vm--prod-db" {
+  source             = "./modules/vm"
+  name               = "prod-db"
+  image              = local.DEBIAN
   cloudflare_zone_id = local.ZONE_ID_SIKADEMO_COM
+}
+
+module "vm--prod-web" {
+  source             = "./modules/vm"
+  name               = "prod-web"
+  image              = local.DEBIAN
+  cloudflare_zone_id = local.ZONE_ID_SIKADEMO_COM
+  depends_on = [
+    module.vm--prod-db,
+  ]
 }
