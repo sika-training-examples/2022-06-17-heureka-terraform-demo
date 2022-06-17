@@ -18,10 +18,14 @@ before_script:
 .dev:
   variables:
     ENV: dev
+  except:
+    - live-prod
 
 .prod:
   variables:
     ENV: prod
+  except:
+    - live-dev
 
 .terraform:fmt:
   stage: validate
