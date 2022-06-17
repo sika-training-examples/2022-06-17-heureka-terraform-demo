@@ -15,8 +15,14 @@ locals {
   ]
 }
 
+data "digitalocean_droplet_snapshot" "heureka" {
+  name_regex  = "^heureka"
+  region      = "fra1"
+  most_recent = true
+}
+
 resource "digitalocean_droplet" "example" {
-  image    = "debian-11-x64"
+  image    = data.digitalocean_droplet_snapshot.heureka.id
   name     = "example"
   region   = "fra1"
   size     = "s-1vcpu-1gb"
