@@ -1,0 +1,108 @@
+image: sikalabs/ci@sha256:71432af7b98f6e92ca99d6d39b568f84ca9766c093e4a7b45ad1191b18f408fd
+
+stages:
+  - validate
+  - plan
+  - apply
+
+cache:
+  paths:
+    - ./env/dev/.terraform/
+    - ./env/prod/.terraform/
+
+before_script:
+  - cd env/$ENV
+  - cp $TFVARS_FILE main.auto.tfvars
+  - make tf-init-state
+
+.dev:
+  variables:
+    ENV: dev
+
+.prod:
+  variables:
+    ENV: prod
+
+.terraform:fmt:
+  stage: validate
+  script:
+    - terraform fmt -check -diff
+
+terraform:fmt:dev:
+  extends:
+    - .dev
+    - .terraform:fmt
+
+terraform:fmt:prod:
+  extends:
+    - .prod
+    - .terraform:fmt
+
+.terraform:validate:
+  stage: validate
+  script:
+    - terraform validate
+
+terraform:validate:dev:
+  extends:
+    - .dev
+    - .terraform:validate
+
+terraform:validate:prod:
+  extends:
+    - .prod
+    - .terraform:validate
+
+.terraform:plan:
+  stage: plan
+  script:
+    - shopt -s expand_aliases
+    - alias convert_report="jq -r '([.resource_changes[]?.change.actions?]|flatten)|{\"create\":(map(select(.==\"create\"))|length),\"update\":(map(select(.==\"update\"))|length),\"delete\":(map(select(.==\"delete\"))|length)}'"
+    - terraform plan -out=terraform.tfplan
+    - terraform show --json terraform.tfplan | convert_report > plan.json
+  artifacts:
+    paths:
+      - ./env/$ENV/terraform.tfplan
+    reports:
+      terraform: ./env/$ENV/plan.json
+
+terraform:plan:dev:
+  extends:
+    - .dev
+    - .terraform:plan
+  needs:
+    - terraform:fmt:dev
+    - terraform:validate:dev
+
+terraform:plan:prod:
+  extends:
+    - .prod
+    - .terraform:plan
+  needs:
+    - terraform:fmt:prod
+    - terraform:validate:prod
+
+
+.terraform:apply:
+  stage: apply
+  when: manual
+  script:
+    - terraform apply terraform.tfplan
+
+terraform:apply:dev:
+  extends:
+    - .dev
+    - .terraform:apply
+  needs:
+    - terraform:plan:dev
+  only:
+    - live-dev
+
+terraform:apply:prod:
+  extends:
+    - .prod
+    - .terraform:apply
+  needs:
+    - terraform:plan:prod
+  only:
+    - live-prod
